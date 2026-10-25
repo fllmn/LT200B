@@ -1,0 +1,22 @@
+[project]
+name = "lt200b-gui"
+version = "0.1.0"
+description = "GUI for the LT200B label printer over Bluetooth LE"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+dependencies = [
+    "bleak==1.0.1",
+    "flask>=3.0",
+    "numpy==2.3.2",
+    "pillow==11.3.0",
+    "platformdirs==4.3.8",
+]
+
+[dependency-groups]
+dev = [
+    "pyinstaller",
+]
+
+[tool.uv]
+package = false

@@ -1,30 +1,30 @@
 # LT200B-gui
-Python-based (CustomTkinter) GUI to print labels on the Dymo LetraTag LT200B.
+Python-based (Flask) web UI to print labels on the Dymo LetraTag LT200B.
 The Dymo LetraTag 200B is a Bluetooth label printer that comes with an iOS and Android app. The app only allows you to print text using a couple of installed fonts. 
 This Python app aims to provide a relatively user friendly experience on the Desktop to print text and image labels from your computer.
 
 ## Features
 - Allows printing labels on a Dymo LT200B printer from desktops (mostly tested in Linux)
 - Scanning functionality to scan for your printer
-- Both text labels and images are supported
+- Stepped label builder: start with a text field, add multiple text and image assets in any order
+- Live preview of the printed tag at full 12 mm tape height
+- Text height selectable in mm, tags always fit the printable area of the tape
+- Special characters (å, ä, ö, é, ü, ...) are supported via a bundled font
+- Web UI served on http://127.0.0.1:8000, local connections only
 
 ## Usage
 ### From the source
-It is recommended to use a Virtual Environment when using this script from the source.
-#### Instruction for Linux/Mac/WSL (only tested on Linux)
-`python -m venv lt200b_venv`
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management. Install uv first:
 
-Activate the Virtual Environment
+`curl -LsSf https://astral.sh/uv/install.sh | sh`
 
-`source lt200b_venv/bin/activate`
+Then install the dependencies (creates a virtual environment in `.venv`):
 
-Install the requirements
+`uv sync`
 
-`pip install -r requirements.txt`
+Run the app (opens the UI in your browser):
 
-Run the script
-
-`python main.py`
+`uv run main.py`
 
 ### Release version
 Currently available for Linux and Windows. 

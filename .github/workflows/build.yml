@@ -12,19 +12,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
+        run: uv sync --frozen
 
       - name: Build Linux executable
         run: |
-          pyinstaller main.py --name LT200B --onefile --add-data "utils:utils" --icon=icon.png
+          uv run pyinstaller main.py --name LT200B --onefile --add-data "utils:utils" --add-data "templates:templates" --icon=icon.png
           mkdir -p dist_artifacts/linux
           mv dist/LT200B dist_artifacts/linux/
 
@@ -40,19 +38,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pyinstaller
+        run: uv sync --frozen
 
       - name: Build Windows executable
         run: |
-          pyinstaller main.py --name LT200B --onefile --add-data "utils;utils" --icon=icon.ico
+          uv run pyinstaller main.py --name LT200B --onefile --add-data "utils;utils" --add-data "templates;templates" --icon=icon.ico
           mkdir dist_artifacts/windows
           move dist\LT200B.exe dist_artifacts\windows\
 
