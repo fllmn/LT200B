@@ -88,7 +88,7 @@ uv run pyinstaller src/lt200b/__main__.py --name LT200B --onefile --paths src \
 (On Windows, use `;` instead of `:` in the `--add-data` arguments.)
 
 ## Configuration
-The last used printer MAC address is stored in a config file located with `platformdirs.user_config_dir` (e.g. `~/.config/LT200B-GUI` on Linux).
+The last used printer MAC address is stored in a config file (e.g. `~/.config/lt200b/config.json` on Linux).
 
 ## Screenshots
 ![Main window](https://github.com/sgilissen/LT200B-gui/blob/main/screenshots/main.png?raw=true)

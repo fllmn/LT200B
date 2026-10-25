@@ -7,7 +7,7 @@ from pathlib import Path
 
 from platformdirs import user_config_dir
 
-APP_NAME = "LT200B-GUI"
+APP_NAME = "lt200b"
 CONFIG_FILENAME = "config.json"
 
 
