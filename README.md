@@ -1,8 +1,7 @@
 # LT200B
 A web-based label maker for the Dymo LetraTag LT200B, built with Flask.
 The Dymo LetraTag 200B is a Bluetooth label printer that comes with an iOS and Android app. The app only allows you to print text using a couple of installed fonts.
-This Python app provides a relatively user friendly experience on the Desktop to compose and print text and image labels from your computer, using a local web UI. This project is a fork from [LT200B-GUI](https://github.com/sgilissen/LT200B-gui). 
-
+This Python app provides a relatively user friendly experience on the Desktop to compose and print text and image labels from your computer, using a local web UI. 
 ## Features
 - Print labels on a Dymo LT200B printer from your desktop browser (mostly tested on Linux)
 - Stepped label builder: starts with one text field, add any number of text and image assets in any order; images are placed inline between text
@@ -94,4 +93,7 @@ The last used printer MAC address is stored in a config file (e.g. `~/.config/lt
 ![Main window](https://github.com/fllmn/LT200B/blob/main/screenshots/main.png?raw=true)
 
 ## Acknowledgements
-[Alexander Horn](https://github.com/alexhorn) for his [LT200B Python repository](https://github.com/alexhorn/lt200b). His code has been used as a base here, wrapped in a web UI with scanning, a label builder and a live preview.
+This project is a fork from [LT200B-GUI](https://github.com/sgilissen/LT200B-gui). Many thanks to sgilissen for his work.
+
+## AI Disclosure
+AI has been for some parts of the development.
