@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LT200B Label Maker</title>
+<style>
+  :root {
+    --bg: #1e1e1e;
+    --card: #2b2b2b;
+    --text: #eaeaea;
+    --muted: #9a9a9a;
+    --accent: #4f9cf9;
+    --danger: #e06c6c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  main { width: 100%; max-width: 520px; }
+  h1 { font-size: 1.3rem; margin: 0 0 1rem; }
+  section {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  h2 { font-size: 1rem; margin: 0 0 0.75rem; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0.75rem 0 0.25rem; }
+  textarea, input[type="text"], select {
+    width: 100%;
+    background: #1a1a1a;
+    color: var(--text);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 0.5rem;
+    font: inherit;
+  }
+  textarea { resize: vertical; }
+  input[type="file"] { color: var(--muted); }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.55rem 1.1rem;
+    font: inherit;
+    cursor: pointer;
+    margin-top: 0.75rem;
+  }
+  button.secondary { background: #3a3a3a; }
+  button.small { padding: 0.3rem 0.7rem; margin: 0; font-size: 0.85rem; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .asset {
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  .asset-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .asset-header .kind {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    flex: 1;
+  }
+  label.check {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+  .asset select { width: auto; }
+  .asset img.thumb {
+    max-width: 100%;
+    max-height: 80px;
+    display: none;
+    border-radius: 4px;
+  }
+  .asset .filename { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  #actions { display: flex; gap: 0.6rem; }
+  #actions button { flex: 1; }
+  .preview-caption { font-size: 0.8rem; color: var(--muted); margin: 0.75rem 0 0.25rem; }
+  .tag-preview {
+    display: none;
+    max-width: 100%;
+    image-rendering: pixelated;
+    border: 1px dashed #666;
+    background: repeating-linear-gradient(45deg, #f7f2e7, #f7f2e7 6px, #efe9db 6px, #efe9db 12px);
+  }
+  #devices { margin-top: 0.5rem; }
+  #devices button {
+    display: block;
+    width: 100%;
+    margin: 0.35rem 0 0;
+    text-align: left;
+    background: #3a3a3a;
+    font-size: 0.85rem;
+  }
+  #status {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+    white-space: pre-line;
+  }
+  #status.error { color: var(--danger); }
+  #status.busy { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>LT200B Label Maker</h1>
+
+  <section>
+    <h2>Printer</h2>
+    <label for="mac">MAC address</label>
+    <input type="text" id="mac" value="{{ last_printer }}" placeholder="AA:BB:CC:DD:EE:FF">
+    <button class="secondary" id="scan">Scan for Printer</button>
+    <div id="devices"></div>
+  </section>
+
+  <section>
+    <h2>Label</h2>
+    <div id="assets"></div>
+    <div id="actions">
+      <button class="secondary" id="add-text">+ Text</button>
+      <button class="secondary" id="add-image">+ Image</button>
+    </div>
+    <button id="print">Print Label</button>
+    <div class="preview-caption">Preview (12 mm tape)</div>
+    <img id="label-preview" class="tag-preview" alt="Label preview">
+  </section>
+
+  <div id="status"></div>
+</main>
+
+<script>
+// surface any script problem in the page itself so failures are never silent
+window.addEventListener("error", (e) => {
+  const el = document.getElementById("status");
+  if (el) { el.textContent = "Script error: " + e.message; el.className = "error"; }
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const el = document.getElementById("status");
+  if (el) { el.textContent = "Script error: " + e.reason; el.className = "error"; }
+});
+
+const $ = (id) => document.getElementById(id);
+const status = $("status");
+
+const FONT_SIZES = {{ font_sizes | tojson }};
+const DEFAULT_FONT_SIZE = {{ default_font_size }};
+
+// ordered label assets: {type: "text", text, size} or {type: "image", file, url}
+const assets = [];
+
+function setStatus(message, cls = "") {
+  status.textContent = message;
+  status.className = cls;
+}
+
+async function post(url, body) {
+  const response = await fetch(url, body);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+  return data;
+}
+
+function removeAsset(asset) {
+  const index = assets.indexOf(asset);
+  if (index !== -1) assets.splice(index, 1);
+  asset.el.remove();
+  schedulePreview();
+}
+
+function addTextAsset() {
+  const asset = { type: "text", text: "", size: DEFAULT_FONT_SIZE, el: null };
+  assets.push(asset);
+
+  const row = document.createElement("div");
+  row.className = "asset";
+
+  const header = document.createElement("div");
+  header.className = "asset-header";
+
+  const kind = document.createElement("span");
+  kind.className = "kind";
+  kind.textContent = "Text";
+  header.appendChild(kind);
+
+  const select = document.createElement("select");
+  for (const size of FONT_SIZES) {
+    const option = document.createElement("option");
+    option.value = size;
+    option.textContent = `${size} mm`;
+    if (size === asset.size) option.selected = true;
+    select.appendChild(option);
+  }
+  select.addEventListener("change", () => {
+    asset.size = Number(select.value);
+    schedulePreview();
+  });
+  header.appendChild(select);
+
+  const remove = document.createElement("button");
+  remove.className = "small secondary";
+  remove.textContent = "\u2715";
+  remove.addEventListener("click", () => removeAsset(asset));
+  header.appendChild(remove);
+
+  const textarea = document.createElement("textarea");
+  textarea.rows = 2;
+  textarea.placeholder = "Text";
+  textarea.addEventListener("input", () => {
+    asset.text = textarea.value;
+    schedulePreview();
+  });
+
+  row.appendChild(header);
+  row.appendChild(textarea);
+  $("assets").appendChild(row);
+  asset.el = row;
+  textarea.focus();
+  schedulePreview();
+}
+
+function addImageAsset() {
+  const asset = { type: "image", file: null, url: null, invert: false, el: null };
+  assets.push(asset);
+
+  const row = document.createElement("div");
+  row.className = "asset";
+
+  const header = document.createElement("div");
+  header.className = "asset-header";
+
+  const kind = document.createElement("span");
+  kind.className = "kind";
+  kind.textContent = "Image";
+  header.appendChild(kind);
+
+  const invertLabel = document.createElement("label");
+  invertLabel.className = "check";
+  const invert = document.createElement("input");
+  invert.type = "checkbox";
+  invert.addEventListener("change", () => {
+    asset.invert = invert.checked;
+    schedulePreview();
+  });
+  invertLabel.appendChild(invert);
+  invertLabel.appendChild(document.createTextNode("Invert"));
+  header.appendChild(invertLabel);
+
+  const remove = document.createElement("button");
+  remove.className = "small secondary";
+  remove.textContent = "\u2715";
+  remove.addEventListener("click", () => removeAsset(asset));
+  header.appendChild(remove);
+
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".png,.jpg,.jpeg,.bmp,.gif";
+  input.addEventListener("change", () => {
+    if (asset.url) URL.revokeObjectURL(asset.url);
+    asset.file = input.files[0] || null;
+    asset.url = asset.file ? URL.createObjectURL(asset.file) : null;
+    thumb.src = asset.url || "";
+    thumb.style.display = asset.url ? "block" : "none";
+    filename.textContent = asset.file ? asset.file.name : "";
+    schedulePreview();
+  });
+
+  const thumb = document.createElement("img");
+  thumb.className = "thumb";
+  thumb.alt = "Image preview";
+
+  const filename = document.createElement("div");
+  filename.className = "filename";
+
+  row.appendChild(header);
+  row.appendChild(input);
+  row.appendChild(thumb);
+  row.appendChild(filename);
+  $("assets").appendChild(row);
+  asset.el = row;
+  schedulePreview();
+}
+
+// build the multipart payload from the ordered assets; returns
+// {assets: [...spec], files appended as image-<n>}; empty assets are
+// skipped unless keepEmpty is set
+function buildBody(mac, keepEmpty) {
+  const spec = [];
+  const body = new FormData();
+  if (mac !== undefined) body.append("mac", mac);
+  let imageCount = 0;
+  for (const asset of assets) {
+    if (asset.type === "text") {
+      if (!asset.text.trim() && !keepEmpty) continue;
+      spec.push({ type: "text", text: asset.text, font_size: asset.size });
+    } else {
+      if (!asset.file && !keepEmpty) continue;
+      const key = `image-${imageCount++}`;
+      body.append(key, asset.file);
+      spec.push({ type: "image", file: imageCount - 1, invert: !!asset.invert });
+    }
+  }
+  body.append("assets", JSON.stringify(spec));
+  return body;
+}
+
+// label preview, refreshed (debounced) on any change; an empty label
+// shows the blank tape
+let previewTimer = null;
+let previewUrl = null;
+
+async function refreshPreview() {
+  try {
+    const response = await fetch("/api/preview", { method: "POST", body: buildBody() });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(blob);
+    const image = $("label-preview");
+    image.src = previewUrl;
+    image.style.display = "block";
+  } catch (e) {
+    // preview is best-effort; printing reports real errors
+  }
+}
+
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(refreshPreview, 300);
+}
+
+$("add-text").addEventListener("click", (e) => { e.preventDefault(); addTextAsset(); });
+$("add-image").addEventListener("click", (e) => { e.preventDefault(); addImageAsset(); });
+
+$("print").addEventListener("click", async (event) => {
+  event.preventDefault();
+  const mac = $("mac").value.trim();
+  if (!mac) {
+    setStatus("Please provide the MAC address of the printer.", "error");
+    return;
+  }
+  const hasContent = assets.some((a) =>
+    (a.type === "text" && a.text.trim()) || (a.type === "image" && a.file));
+  if (!hasContent) {
+    setStatus("The label is empty. Add text or an image first.", "error");
+    return;
+  }
+  setStatus("Printing...", "busy");
+  try {
+    await post("/api/print", { method: "POST", body: buildBody(mac) });
+    setStatus("Label sent to printer.");
+  } catch (e) {
+    setStatus(e.message, "error");
+  }
+});
+
+$("scan").addEventListener("click", async (event) => {
+  event.preventDefault();
+  $("devices").innerHTML = "";
+  setStatus("Scanning for devices...", "busy");
+  try {
+    const data = await post("/api/scan", { method: "POST" });
+    setStatus(data.devices.length ? "Select a device:" : "No devices found.");
+    for (const device of data.devices) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${device.name} (${device.address})`;
+      button.addEventListener("click", () => {
+        $("mac").value = device.address;
+        $("devices").innerHTML = "";
+        setStatus(`${device.name} selected.`);
+      });
+      $("devices").appendChild(button);
+    }
+  } catch (e) {
+    setStatus(e.message, "error");
+  }
+});
+
+// if you can read this in the page, the UI script loaded and wired up fully
+setStatus("Ready.");
+addTextAsset(); // a label starts with one text field
+refreshPreview(); // show the blank tape
+</script>
+</body>
+</html>
