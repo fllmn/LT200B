@@ -167,9 +167,11 @@ def _parse_assets(strict: bool) -> tuple[list[Asset], str | None]:
 
 
 def _font_size_mm(value: object) -> float | None:
+    if not isinstance(value, (str, int, float)) or isinstance(value, bool):
+        return None
     try:
-        size = float(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
+        size = float(value)
+    except ValueError:
         return None
     return size if MIN_FONT_SIZE_MM <= size <= MAX_FONT_SIZE_MM else None
 
