@@ -29,21 +29,6 @@ Run the app (starts the server and opens the UI in your browser):
 
 `uv run lt200b`
 
-### Project layout
-
-```
-src/lt200b/
-  app.py        Flask app, API endpoints, entry point (uv run lt200b)
-  config.py     ConfigStore: persisted settings (last printer)
-  geometry.py   PrintGeometry: calibrated mm/dot conversion factors
-  job.py        JobEncoder: label image -> chunked print job
-  printer.py    PrinterClient: BLE scan and print transport
-  render.py     LabelRenderer: text/emoji/image assets -> label image
-  fonts/        Bundled Liberation Sans and Noto Emoji (with licenses)
-  templates/    Web UI
-tests/          pytest suite (rendering, job encoding, API, config)
-```
-
 ### Development
 
 Type checking and tests:
