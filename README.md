@@ -30,7 +30,31 @@ Then install the dependencies (creates a virtual environment in `.venv`):
 
 Run the app (starts the server and opens the UI in your browser):
 
-`uv run main.py`
+`uv run lt200b`
+
+### Project layout
+
+```
+src/lt200b/
+  app.py        Flask app, API endpoints, entry point (uv run lt200b)
+  config.py     ConfigStore: persisted settings (last printer)
+  geometry.py   PrintGeometry: calibrated mm/dot conversion factors
+  job.py        JobEncoder: label image -> chunked print job
+  printer.py    PrinterClient: BLE scan and print transport
+  render.py     LabelRenderer: text/emoji/image assets -> label image
+  fonts/        Bundled Liberation Sans and Noto Emoji (with licenses)
+  templates/    Web UI
+tests/          pytest suite (rendering, job encoding, API, config)
+```
+
+### Development
+
+Type checking and tests:
+
+```
+uv run mypy src tests
+uv run pytest
+```
 
 ### Building a label
 1. Enter your printer's MAC address or use **Scan for Printer** and pick it from the list.
@@ -57,7 +81,10 @@ PyInstaller is included as a dev dependency:
 
 ```
 uv sync
-uv run pyinstaller main.py --name LT200B --onefile --add-data "utils:utils" --add-data "templates:templates" --icon=icon.png
+uv run pyinstaller src/lt200b/__main__.py --name LT200B --onefile --paths src \
+  --add-data "src/lt200b/fonts:lt200b/fonts" \
+  --add-data "src/lt200b/templates:lt200b/templates" \
+  --icon=icon.png
 ```
 
 (On Windows, use `;` instead of `:` in the `--add-data` arguments.)

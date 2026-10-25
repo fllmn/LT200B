@@ -22,7 +22,7 @@ jobs:
 
       - name: Build Linux executable
         run: |
-          uv run pyinstaller main.py --name LT200B --onefile --add-data "utils:utils" --add-data "templates:templates" --icon=icon.png
+          uv run pyinstaller src/lt200b/__main__.py --name LT200B --onefile --paths src --add-data "src/lt200b/fonts:lt200b/fonts" --add-data "src/lt200b/templates:lt200b/templates" --icon=icon.png
           mkdir -p dist_artifacts/linux
           mv dist/LT200B dist_artifacts/linux/
 
@@ -48,7 +48,7 @@ jobs:
 
       - name: Build Windows executable
         run: |
-          uv run pyinstaller main.py --name LT200B --onefile --add-data "utils;utils" --add-data "templates;templates" --icon=icon.ico
+          uv run pyinstaller src/lt200b/__main__.py --name LT200B --onefile --paths src --add-data "src/lt200b/fonts;lt200b/fonts" --add-data "src/lt200b/templates;lt200b/templates" --icon=icon.ico
           mkdir dist_artifacts/windows
           move dist\LT200B.exe dist_artifacts\windows\
 
